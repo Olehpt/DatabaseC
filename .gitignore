@@ -1,6 +1,14 @@
 # Prerequisites
 *.d
 
+#vs garbage
+.vs/
+x64/
+Debug/
+Release/
+*.user
+*.suo
+
 # Compiled Object files
 *.slo
 *.lo

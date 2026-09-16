@@ -12,7 +12,12 @@ endif()
 project ("DatabaseC")
 
 # Добавьте источник в исполняемый файл этого проекта.
-add_executable (DatabaseC "DatabaseC.cpp" "DatabaseC.h" )
+add_executable (DatabaseC
+"DatabaseC.cpp"
+"DatabaseC.h" 
+"src/BinaryFile.h"
+"src/BinaryFile.cpp"
+ "src/DataModels.h" "src/Table.h" "src/Table.cpp" "src/Database.cpp" "src/Database.h" "src/DataModels.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET DatabaseC PROPERTY CXX_STANDARD 20)
