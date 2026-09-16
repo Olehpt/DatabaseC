@@ -2,22 +2,14 @@
 #include "src/BinaryFile.h"
 #include "src/Database.h"
 
+#include "src/Server.h"
+
 using namespace std;
 
 int main()
 {
-    Database db;
+    Server server;
+    server.run();
 
-    if (db.load("database.bin"))
-    {
-        Table* table = db.getTable("Students");
-    }
-    for (auto& t : db.getTables()) {
-        for (auto r : t.getRecords()) {
-			for (auto& v : r.values) {
-				cout << r.to_string(v) << " ";
-			}
-			cout << endl;
-        }
-    }
+    return 0;
 }

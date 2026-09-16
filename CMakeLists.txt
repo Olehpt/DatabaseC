@@ -1,26 +1,31 @@
-﻿# CMakeList.txt: проект CMake для DatabaseC; включите исходный код и определения,
-# укажите здесь логику для конкретного проекта.
-#
-cmake_minimum_required (VERSION 3.8)
+﻿cmake_minimum_required(VERSION 3.15)
 
-# Включение горячей перезагрузки для компиляторов MSVC, если поддерживается.
-if (POLICY CMP0141)
-  cmake_policy(SET CMP0141 NEW)
-  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
-endif()
+project(DatabaseC)
 
-project ("DatabaseC")
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Добавьте источник в исполняемый файл этого проекта.
-add_executable (DatabaseC
-"DatabaseC.cpp"
-"DatabaseC.h" 
-"src/BinaryFile.h"
-"src/BinaryFile.cpp"
- "src/DataModels.h" "src/Table.h" "src/Table.cpp" "src/Database.cpp" "src/Database.h" "src/DataModels.cpp")
+add_executable(DatabaseC
+    DatabaseC.cpp
+    DatabaseC.h
+    src/Server.cpp
+    src/Server.h
+    src/BinaryFile.h
+    src/BinaryFile.cpp
+    src/DataModels.h
+    src/Table.h
+    src/Table.cpp
+    src/Database.cpp
+    src/Database.h
+    src/DataModels.cpp
+)
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET DatabaseC PROPERTY CXX_STANDARD 20)
-endif()
+target_include_directories(DatabaseC PRIVATE
+    ${CMAKE_SOURCE_DIR}/external
+    ${CMAKE_SOURCE_DIR}/external/boost_1_92_0
+)
 
-# TODO: Добавьте тесты и целевые объекты, если это необходимо.
+target_compile_definitions(DatabaseC PRIVATE
+    CROW_USE_BOOST
+)

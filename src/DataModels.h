@@ -2,6 +2,8 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <cstdint>
+
 
 enum class DataType
 {

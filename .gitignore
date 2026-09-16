@@ -9,6 +9,9 @@ Release/
 *.user
 *.suo
 
+#boost
+/external/boost_1_92_0/
+
 # Compiled Object files
 *.slo
 *.lo
