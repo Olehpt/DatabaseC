@@ -77,3 +77,15 @@ bool Database::load(const std::string& filename)
 
     return true;
 }
+
+void Database::removeTable(const std::string& name)
+{
+    for (std::size_t i = 0; i < tables.size(); ++i)
+    {
+        if (tables[i].getName() == name)
+        {
+            tables.erase(tables.begin() + i);
+            return;
+        }
+    }
+}

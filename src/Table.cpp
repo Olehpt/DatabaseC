@@ -194,3 +194,43 @@ bool Table::load(BinaryFile& file)
 
     return true;
 }
+
+void Table::removeColumn(const std::string& name)
+{
+    for (std::size_t i = 0; i < columns.size(); ++i)
+    {
+        if (columns[i].name == name)
+        {
+            columns.erase(columns.begin() + i);
+
+            for (Record& record : records)
+            {
+                if (i < record.values.size())
+                    record.values.erase(record.values.begin() + i);
+            }
+
+            return;
+        }
+    }
+}
+
+void Table::removeRecord(std::size_t index)
+{
+    if (index >= records.size())
+        return;
+
+    records.erase(records.begin() + index);
+}
+
+void Table::updateRecord(
+    std::size_t index,
+    const Record& record)
+{
+    if (index >= records.size())
+        return;
+
+    if (record.values.size() != columns.size())
+        return;
+
+    records[index] = record;
+}

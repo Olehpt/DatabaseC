@@ -17,6 +17,10 @@ public:
     void addColumn(const Column& column);
     void addRecord(const Record& record);
 
+    void removeColumn(const std::string& name);
+    void removeRecord(std::size_t index);
+    void updateRecord(std::size_t index, const Record& record);
+
     const std::string& getName() const;
     const std::vector<Column>& getColumns() const;
     const std::vector<Record>& getRecords() const;

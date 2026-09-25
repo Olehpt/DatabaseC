@@ -92,10 +92,6 @@ crow::json::wvalue Server::valueToJson(const Value& value)
 
 void Server::setupDatabaseRoutes(crow::SimpleApp& app)
 {
-    // GET /databases
-    //
-    // Возвращает список всех загруженных .bin файлов.
-
     CROW_ROUTE(app, "/databases")
         ([this]()
     {
@@ -110,14 +106,80 @@ void Server::setupDatabaseRoutes(crow::SimpleApp& app)
 
         return crow::response(result);
     });
+
+    CROW_ROUTE(app, "/databases/<string>")
+        .methods(crow::HTTPMethod::Post)
+        ([this](const std::string& databaseName)
+    {
+        if (databases.find(databaseName) != databases.end())
+        {
+            return crow::response(409, "Database already exists");
+        }
+
+        Database database;
+
+        const std::string filename = databaseName + ".bin";
+
+        if (!database.save(filename))
+        {
+            return crow::response(500, "Failed to create database file");
+        }
+
+        databases.emplace(databaseName, std::move(database));
+
+        crow::json::wvalue result;
+        result["message"] = "Database created";
+        result["name"] = databaseName;
+
+        return crow::response(201, result);
+    });
+
+    CROW_ROUTE(app, "/databases/<string>")
+        .methods(crow::HTTPMethod::Delete)
+        ([this](const std::string& databaseName)
+    {
+        auto databaseIt = databases.find(databaseName);
+
+        if (databaseIt == databases.end())
+        {
+            return crow::response(404, "Database not found");
+        }
+
+        const std::string filename = databaseName + ".bin";
+
+        std::error_code error;
+
+        if (!std::filesystem::remove(filename, error))
+        {
+            if (error)
+            {
+                return crow::response(
+                    500,
+                    "Failed to delete database file"
+                );
+            }
+
+            return crow::response(
+                500,
+                "Database file not found"
+            );
+        }
+
+        databases.erase(databaseIt);
+
+        crow::json::wvalue result;
+        result["message"] = "Database deleted";
+        result["name"] = databaseName;
+
+        return crow::response(200, result);
+    });
+
+
 }
 
 
 void Server::setupTableRoutes(crow::SimpleApp& app)
 {
-    // GET /databases/<database>/tables
-    //
-    // Возвращает список таблиц выбранной базы.
 
     CROW_ROUTE(app, "/databases/<string>/tables")
         ([this](const std::string& databaseName)
@@ -131,23 +193,18 @@ void Server::setupTableRoutes(crow::SimpleApp& app)
 
         crow::json::wvalue result;
 
+        result["tables"] = crow::json::wvalue::list();
+
         int index = 0;
 
         for (const Table& table : database.getTables())
         {
             result["tables"][index]["name"] = table.getName();
-
             ++index;
         }
 
         return crow::response(result);
     });
-
-
-    // GET /databases/<database>/tables/<table>
-    //
-    // Возвращает структуру выбранной таблицы:
-    // имя + список колонок.
 
     CROW_ROUTE(app, "/databases/<string>/tables/<string>")
         ([this](
@@ -170,6 +227,10 @@ void Server::setupTableRoutes(crow::SimpleApp& app)
 
         result["name"] = table->getName();
 
+        // Обязательно создаём пустой список,
+        // даже если колонок пока нет.
+        result["columns"] = crow::json::wvalue::list();
+
         int index = 0;
 
         for (const Column& column : table->getColumns())
@@ -183,50 +244,137 @@ void Server::setupTableRoutes(crow::SimpleApp& app)
 
         return crow::response(result);
     });
-
-
-    // GET /databases/<database>/tables/<table>/rows
-    //
-    // Возвращает все записи таблицы.
-
-    CROW_ROUTE(app, "/databases/<string>/tables/<string>/rows")
-        ([this](
-            const std::string& databaseName,
-            const std::string& tableName)
-    {
-        auto databaseIt = databases.find(databaseName);
-
-        if (databaseIt == databases.end())
-            return crow::response(404, "Database not found");
-
-        Database& database = databaseIt->second;
-
-        Table* table = database.getTable(tableName);
-
-        if (table == nullptr)
-            return crow::response(404, "Table not found");
-
-        crow::json::wvalue result;
-
-        int rowIndex = 0;
-
-        for (const Record& record : table->getRecords())
+    
+       CROW_ROUTE(
+            app,
+            "/databases/<string>/tables/<string>"
+        )
+            .methods(crow::HTTPMethod::Post)
+            ([this](
+                const std::string& databaseName,
+                const std::string& tableName)
         {
-            int valueIndex = 0;
+            auto databaseIt = databases.find(databaseName);
 
-            for (const Value& value : record.values)
+            if (databaseIt == databases.end())
             {
-                result["rows"][rowIndex]["values"][valueIndex] =
-                    valueToJson(value);
-
-                ++valueIndex;
+                return crow::response(404, "Database not found");
             }
 
-            ++rowIndex;
-        }
+            Database& database = databaseIt->second;
+            if (database.getTable(tableName) != nullptr)
+            {
+                return crow::response(409, "Table already exists");
+            }
 
-        return crow::response(result);
-    });
+            Table table(tableName);
+
+            database.addTable(table);
+            const std::string filename = databaseName + ".bin";
+
+            if (!database.save(filename))
+            {
+                return crow::response(
+                    500,
+                    "Failed to save database"
+                );
+            }
+
+            crow::json::wvalue result;
+
+            result["message"] = "Table created";
+            result["database"] = databaseName;
+            result["table"] = tableName;
+
+            return crow::response(201, result);
+        });
+
+        CROW_ROUTE(
+            app,
+            "/databases/<string>/tables/<string>"
+        )
+            .methods(crow::HTTPMethod::Delete)
+            ([this](
+                const std::string& databaseName,
+                const std::string& tableName)
+        {
+            auto databaseIt = databases.find(databaseName);
+
+            if (databaseIt == databases.end())
+            {
+                return crow::response(404, "Database not found");
+            }
+
+            Database& database = databaseIt->second;
+            if (database.getTable(tableName) == nullptr)
+            {
+                return crow::response(404, "Table not found");
+            }
+            database.removeTable(tableName);
+            const std::string filename = databaseName + ".bin";
+
+            if (!database.save(filename))
+            {
+                return crow::response(
+                    500,
+                    "Failed to save database"
+                );
+            }
+
+            crow::json::wvalue result;
+
+            result["message"] = "Table deleted";
+            result["database"] = databaseName;
+            result["table"] = tableName;
+
+            return crow::response(200, result);
+        });
+
+
+        CROW_ROUTE(
+            app,
+            "/databases/<string>/tables/<string>/rows"
+        )
+            ([this](
+                const std::string& databaseName,
+                const std::string& tableName)
+        {
+            auto databaseIt = databases.find(databaseName);
+
+            if (databaseIt == databases.end())
+                return crow::response(404, "Database not found");
+
+            Database& database = databaseIt->second;
+
+            Table* table = database.getTable(tableName);
+
+            if (table == nullptr)
+                return crow::response(404, "Table not found");
+
+            crow::json::wvalue result;
+
+            // Даже пустая таблица должна вернуть rows: [].
+            result["rows"] = crow::json::wvalue::list();
+
+            int rowIndex = 0;
+
+            for (const Record& record : table->getRecords())
+            {
+                int valueIndex = 0;
+
+                for (const Value& value : record.values)
+                {
+                    result["rows"][rowIndex]["values"][valueIndex] =
+                        valueToJson(value);
+
+                    ++valueIndex;
+                }
+
+                ++rowIndex;
+            }
+
+            return crow::response(result);
+        });
 }
 
 
@@ -235,7 +383,6 @@ void Server::setupRoutes(crow::SimpleApp& app)
     setupDatabaseRoutes(app);
     setupTableRoutes(app);
 
-    // Проверка работы сервера
     CROW_ROUTE(app, "/")
         ([]()
     {
