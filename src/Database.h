@@ -21,4 +21,6 @@ public:
 
     bool save(const std::string& filename) const;
     bool load(const std::string& filename);
+    bool exportBinary(std::string& bytes) const;
+    bool importBinary(const std::string& bytes);
 };

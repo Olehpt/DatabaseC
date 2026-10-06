@@ -1,27 +1,16 @@
-#pragma once
-
+﻿#pragma once
 #include "../external/crow_all.h"
-#include "boost/asio.hpp"
-
-#include <map>
-#include <string>
-
 #include "Database.h"
-
-class Server
-{
-private:
+#include <map>
+#include <mutex>
+#include <functional>
+class Server {
     std::map<std::string, Database> databases;
-
+    std::mutex mutex;
     void loadDatabases();
-
     void setupRoutes(crow::SimpleApp& app);
-    void setupDatabaseRoutes(crow::SimpleApp& app);
-    void setupTableRoutes(crow::SimpleApp& app);
-
-    static std::string dataTypeToString(DataType type);
-    static crow::json::wvalue valueToJson(const Value& value);
-
+    crow::response withTable(const crow::request& req, const std::string& database,
+        const std::string& table, const std::function<crow::response(Table&, Database&)>& action);
 public:
     void run();
 };

@@ -29,3 +29,15 @@ target_include_directories(DatabaseC PRIVATE
 target_compile_definitions(DatabaseC PRIVATE
     CROW_USE_BOOST
 )
+
+if(WIN32)
+    target_link_libraries(DatabaseC PRIVATE ws2_32 mswsock)
+endif()
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(DatabaseCoreTests tests/DatabaseCoreTests.cpp
+        src/Database.cpp src/Table.cpp src/BinaryFile.cpp src/DataModels.cpp)
+    target_include_directories(DatabaseCoreTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    add_test(NAME DatabaseCoreTests COMMAND DatabaseCoreTests)
+endif()

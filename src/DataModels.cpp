@@ -2,6 +2,7 @@
 #include <string>
 #include <variant>
 #include <type_traits>
+#include <cmath>
 
 std::string Record::to_string(const Value &v) {
     return std::visit(
@@ -16,6 +17,11 @@ std::string Record::to_string(const Value &v) {
         else if constexpr (std::is_same_v<T, char>)
         {
             return std::string(1, arg);
+        }
+        else if constexpr (std::is_same_v<T, Complex>)
+        {
+            return std::to_string(arg.real()) + (std::signbit(arg.imag()) ? "" : "+") +
+                std::to_string(arg.imag()) + "i";
         }
         else
         {

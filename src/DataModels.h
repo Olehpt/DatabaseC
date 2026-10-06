@@ -3,6 +3,7 @@
 #include <variant>
 #include <vector>
 #include <cstdint>
+#include <complex>
 
 
 enum class DataType
@@ -10,7 +11,8 @@ enum class DataType
     Integer,
     Real,
     Char,
-    String
+    String,
+    Complex
 };
 
 struct Column
@@ -19,11 +21,14 @@ struct Column
     DataType type;
 };
 
+using Complex = std::complex<double>;
+
 using Value = std::variant<
     int32_t,
     double,
     char,
-    std::string
+    std::string,
+    Complex
 >;
 
 struct Record
